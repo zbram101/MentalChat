@@ -10,7 +10,7 @@ import {
   ConversationHeader,
   TypingIndicator
 } from "@chatscope/chat-ui-kit-react"
-import styles from "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
+import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
 import { useChannel } from '@ably-labs/react-hooks'
 import { Types } from "ably"
 
@@ -163,7 +163,7 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={`${styles.main}`}>
+      <main>
       <div style={{display: "flex"}}>
         <div style={{padding: "10px"}}> 
           <input type="checkbox" id="streaming" name="streaming" checked={streaming} onChange={() => setStreaming(!streaming)} />
@@ -176,7 +176,7 @@ export default function Home() {
         <div style={{padding: "6px"}}>
           Username <input type="text" value={userId} onChange={(e:any) => setUserId(e.target.value)}  style={{padding: "6px"}}/>
         </div>
-        {selectedTopic ? (
+         {selectedTopic ? (
             <div style={{ padding: "10px" }}>
               <button onClick={handleStartNewConversation}>Start New Conversation</button>
             </div>
