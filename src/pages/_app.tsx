@@ -1,6 +1,8 @@
 import type { AppProps } from 'next/app'
 import { configureAbly } from "@ably-labs/react-hooks"
 
+console.log(process.env.API_ROOT,"process.env.API_ROOT some")
+
 const prefix = process.env.API_ROOT || ""
 
 const clientId =   
