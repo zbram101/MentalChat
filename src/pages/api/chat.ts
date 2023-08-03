@@ -35,9 +35,9 @@ Chat History:
 Follow Up Input: {question}
 Standalone question:`;
 
-const QA_PROMPT = `Goal: Understand their situation and console them. Answer with asking a question to understand their situation better.
+const QA_PROMPT = `I'm a person seeking mental health support. I'd like you to help me think through problems in my life and help find solutions to my problem.
 
-{context}
+Always end your response to me with a question that will help me dive deeper in my inner work.
 
 Chat History:
 {chat_history}
