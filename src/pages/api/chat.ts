@@ -10,6 +10,8 @@ import { ChatOpenAI } from "langchain/chat_models/openai";
 
 let client: PineconeClient | null = null
 
+const PINECONE_NAME_SPACE = 'mentalHealth-help'; //namespace is optional for your vectors
+
 type PageSource = {
     pageContent: string,
     metadata: {
@@ -66,12 +68,17 @@ const handleRequest = async ({ prompt, userId, source, streaming }: { prompt: st
 
      const vectorStore = await PineconeStore.fromExistingIndex(
         new OpenAIEmbeddings(),
-        { pineconeIndex }
+        { 
+            pineconeIndex,
+            textKey: 'text',
+            namespace: PINECONE_NAME_SPACE,
+        }
      )
 
      const model = new ChatOpenAI({
          temperature: 0,
          streaming,
+         modelName: 'gpt-3.5-turbo', //change this to gpt-4 if you have access
          callbacks: [{
             async handleLLMNewToken(token) {
                 channel.publish({
