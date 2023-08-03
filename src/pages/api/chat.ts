@@ -35,12 +35,13 @@ Chat History:
 Follow Up Input: {question}
 Standalone question:`;
 
-const QA_PROMPT = `Goal: Help them not feel sad. Understand their situation and console them check to see if they feel consoled.
+const QA_PROMPT = `Goal: Understand their situation and console them. Answer with asking a question to understand their situation better.
 
 {context}
 
 Chat History:
 {chat_history}
+
 answer: {question}
 Next question:`;
 
