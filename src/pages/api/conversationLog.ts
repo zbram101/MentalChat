@@ -19,6 +19,20 @@ class ConversationLog {
         })    
        return conversaion.map((data) => data.entry).reverse()
     }
+
+    public async getUserConverstion({ limit }: { limit: number }): Promise<string[]> {
+        const conversaion = await prisma.conversations.findMany(
+         { 
+             where: { user_id: this.userId, speaker: "user" },
+             take: limit, 
+             orderBy: [{ create_at: 'desc' }] 
+         })    
+        return conversaion.map((data) => data.entry).reverse()
+     }
+
+    public async deleteConversation() {
+        await prisma.conversations.deleteMany({ where: { user_id: this.userId } });
+    }
 }
 
 export { ConversationLog }

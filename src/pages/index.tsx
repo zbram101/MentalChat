@@ -86,12 +86,19 @@ export default function Home() {
   })
 
 
-  const handleStartNewConversation = () => {
+  const handleStartNewConversation = async() => {
     setSelectedTopic(null); // Reset the selected topic to null
     setConversation([]); // Clear the conversation
     setText(""); // Clear the input text
     setStatusMessage("Waiting for query..."); // Reset the status message
     setBotIsTyping(false); // Set botIsTyping to false
+    const response = await fetch("/api/endConversation", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId }), // Include the selected topic in the user input
+    });
   };
 
   const handleTopicSelection = (topic: string) => {
