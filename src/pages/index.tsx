@@ -1,5 +1,5 @@
 import Head from 'next/head'
-import { useState  } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import * as timeago from "timeago.js"
 import {
   MainContainer,
@@ -69,6 +69,10 @@ export default function Home() {
   const [ streaming, setStreaming] = useState<boolean>(true)
   const [ userId, setUserId] = useState<string>("")
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  
+  useEffect(() => inputRef.current?.focus());
 
    useChannel(userId || 'default', (message) => {
     switch(message.data.event) {
@@ -235,13 +239,13 @@ export default function Home() {
                     }
                   </MessageList>
                   <MessageInput
+                      ref={inputRef}
                       placeholder='Type message here'
                       onSend={submit}
                       onChange={(e, text) => {
                         setText(text)
                       }}
                       sendButton={true}
-                      autoFocus
                       disabled={botIsTyping}
                   />
               </ChatContainer>
