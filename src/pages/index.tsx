@@ -69,6 +69,7 @@ export default function Home() {
   const [ streaming, setStreaming] = useState<boolean>(true)
   const [ userId, setUserId] = useState<string>("")
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  
 
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -128,6 +129,8 @@ export default function Home() {
   };
   
   const sendUserInput = async (input: string) => {
+    let history = conversation.map((data) => data.message).reverse().join("\n");
+    console.log(history,"conver")
     try {
       setBotIsTyping(true);
       const response = await fetch("/api/chat", {
@@ -135,7 +138,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt: input, userId, source, streaming }), // Include the selected topic in the user input
+        body: JSON.stringify({ history, prompt: input, userId, source, streaming }), // Include the selected topic in the user input
       });
 
       await response.json();

@@ -30,7 +30,7 @@ const handleRequest = async({ userId }: { userId: string }) => {
                     {
                         "var_name": "symptoms",
                         "type": "string",
-                        "description": "feeling sad, irritable, changes in sleep pattern, difficulty concentrating, or thoughts of self-harm"
+                        "description": "changes in mood, changes in sleep pattern, difficulty with tasks, or thoughts of self-harm"
                     },
                     {
                         "var_name": "behaviors",

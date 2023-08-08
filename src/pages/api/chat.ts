@@ -45,7 +45,7 @@ Chat History:
 answer: {question}
 Next question:`;
 
-const handleRequest = async ({ prompt, userId, source, streaming }: { prompt: string, userId: string, source: boolean, streaming: boolean }) => {
+const handleRequest = async ({ history, prompt, userId, source, streaming }: { history:[] ,prompt: string, userId: string, source: boolean, streaming: boolean }) => {
    if(!client) {
     await initPineconeClient()
    }
@@ -54,9 +54,9 @@ const handleRequest = async ({ prompt, userId, source, streaming }: { prompt: st
      const channel = ably.channels.get(userId)
      const interactionId = uuid()
 
-     const conversationLog = new ConversationLog(userId)
-     const conversationHistory = await conversationLog.getConverstion({ limit: 10})
-     await conversationLog.addEntry({ entry: prompt, speaker: "user"})
+    //  const conversationLog = new ConversationLog(userId)
+    //  const conversationHistory = await conversationLog.getConverstion({ limit: 10})
+    //  await conversationLog.addEntry({ entry: prompt, speaker: "user"})
 
      const pineconeIndex = client!.Index(process.env.PINECONE_INDEX!)
      
@@ -118,7 +118,9 @@ const handleRequest = async ({ prompt, userId, source, streaming }: { prompt: st
         }
      )
 
-     let chat_history =  conversationHistory.join("\n")
+    //  let chat_history =  conversationHistory.join("\n")
+    let chat_history = history;
+    console.log(chat_history,"chat_history")
      const response = await chain.call({ question: prompt, chat_history })
 
      if(!streaming) {
@@ -157,7 +159,7 @@ const handleRequest = async ({ prompt, userId, source, streaming }: { prompt: st
         });
     }
 
-     await conversationLog.addEntry({ entry: response.text, speaker: "bot" })
+    //  await conversationLog.addEntry({ entry: response.text, speaker: "bot" })
 
     } catch(error) { 
        console.error(error)
@@ -165,7 +167,7 @@ const handleRequest = async ({ prompt, userId, source, streaming }: { prompt: st
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const {  body: { prompt, userId, source, streaming } } = req
-    await handleRequest({ prompt, userId, source, streaming})
+    const {  body: { history, prompt, userId, source, streaming } } = req
+    await handleRequest({ history, prompt, userId, source, streaming})
     res.status(200).json({ "message": "started" })
 }
