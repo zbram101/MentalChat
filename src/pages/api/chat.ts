@@ -86,7 +86,11 @@ const handleRequest = async ({ prompt, userId, source, streaming }: { prompt: st
         })
 
         const model = new ChatOpenAI({
-            temperature: 0,
+            maxTokens: 256,
+            topP: 1,
+            frequencyPenalty: 0,
+            presencePenalty: 0,
+            temperature: 1,
             streaming,
             modelName: 'gpt-4', //change this to gpt-4 if you have access
             callbacks: [{
