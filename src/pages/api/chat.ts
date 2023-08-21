@@ -56,7 +56,11 @@ const handleRequest = async ({ history, prompt, userId, source, streaming }: { h
      })
 
      const model = new ChatOpenAI({ 
-        temperature: 0,
+        maxTokens: 256,
+        topP: 1,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+        temperature: 1,
         streaming,
         modelName: 'gpt-4', //change this to gpt-4 if you have access
         callbacks: [{
@@ -89,10 +93,11 @@ const handleRequest = async ({ history, prompt, userId, source, streaming }: { h
         
         Sometimes give me an example of advice on how I could look at my situation differently. Don't ever give me a large list of recommendations and dont mention Internal Family Systems.
         
-        Chat History:
-        {chat_history}`
+        Chat History: 
+        {chat_history}
+        `
         ),
-        HumanMessagePromptTemplate.fromTemplate("{question}"),
+        HumanMessagePromptTemplate.fromTemplate(`{question}`),
     ]);
 
     const chain = new LLMChain({
