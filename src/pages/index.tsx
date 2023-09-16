@@ -144,10 +144,12 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ numberOfUserMessages, status: conversationStatus, history, prompt: input, userId, source, streaming }), // Include the selected topic in the user input
+        body: JSON.stringify({ numberOfUserMessages, initialStatus: conversationStatus, history, prompt: input, userId, source, streaming }), // Include the selected topic in the user input
       });
 
-      await response.json();
+      const responseData = await response.json();
+      const newStatus = responseData.status; // Assuming the API returns the new status
+      setConversationSatus(newStatus); // Update the conversation status
     } catch (error) {
       console.error("Error submitting message:", error);
     } finally {

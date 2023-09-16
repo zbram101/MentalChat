@@ -56,222 +56,6 @@ type MessageEntry = {
 const ably = new Ably.Realtime({ key: process.env.ABLY_API_KEY})
 
 
-
-
-
-
-
-
-const callLLM = async (prompt: string,history: string) =>{
-
-    const model2 = new ChatOpenAI({ 
-        maxTokens: 256,
-        topP: 1,
-        frequencyPenalty: 0,
-        presencePenalty: 0,
-        temperature: 1,
-        streaming:false,
-        modelName: 'gpt-4', //change this to gpt-4 if you have access
-    });
-
-
-    const chatPrompt = ChatPromptTemplate.fromPromptMessages([
-        SystemMessagePromptTemplate.fromTemplate(
-            prompt
-        ),
-    ]);
-
-    const chain = new LLMChain({
-        llm: model2,
-        prompt: chatPrompt,
-    });
-    const response = await chain.call({ chat_history:history })
-
-    return response.text
-
-}
-
- 
-
-
-const getNewPrompt = async (numberOfUserMessages:number,status: string,history: string) => {
-
-    console.log(history, "history");
-    if(!history){
-        return ROOT_CAUSE_IDENTIFICATION_PROMPT 
-    }
-    if(status === "rootCauseIdentification") {
-        console.log(history, "history");
-        let problems = await callLLM(ROOT_CAUSE_IDENTIFICATION_CHECK,history)
-        console.log(problems, "problems");
-        if(problems.includes("True")){
-            return ROOT_CAUSE_IDENTIFICATION_PROMPT
-        }else{
-            // if its been 3 messages in history do is stuck check
-            let been3Messages = numberOfUserMessages>3;
-            if(been3Messages){
-                let isStuck = await callLLM(IS_STUCK_CHECK,history)
-                console.log(isStuck, "isStuck");
-                if(isStuck.includes("True")){
-                    return SOLUTION_TYPE_IDENTIFICATION_PROMPT
-                }else{
-                    return ROOT_CAUSE_IDENTIFICATION_PROMPT
-                }
-            }else{
-                return ROOT_CAUSE_IDENTIFICATION_PROMPT
-            }
-        }
-    }
-
-    if(status === "solutionTypeIdentification") {
-        // if solution type identified as Short Term 
-        // if solution type identified as Long Term
-        // else solution type not identified 
-        // short-term, root-cause, unknown
-        let solutionType = await callLLM(SOLUTION_TYPE_IDENTIFICATION_CHECK,history)
-        if(solutionType.includes("short-term")){
-            return SHORT_TERM_SOLUTION_PROMPT
-        }else if(solutionType.includes("root-cause")){ 
-            return ROOT_CAUSE_IDENTIFICATION_PROMPT
-        }else{
-            return SOLUTION_TYPE_IDENTIFICATION_PROMPT
-        }
-    }
-
-    if(status === "shortTermSolution") {
-        // sendShortTermSolutionPrompt
-        return SHORT_TERM_SOLUTION_PROMPT
-    }
-
-
-    return ROOT_CAUSE_IDENTIFICATION_PROMPT
-}
-
-const handleRequest = async ({ numberOfUserMessages, status, history, prompt, userId, source, streaming }: { numberOfUserMessages:number ,status:string, history:string ,prompt: string, userId: string, source: boolean, streaming: boolean }) => {
-//    if(!client) {
-//     await initPineconeClient()
-//    }
-
-   try {
-     const channel = ably.channels.get(userId)
-     const interactionId = uuid()
-
-    //  const conversationLog = new ConversationLog(userId)
-    //  const conversationHistory = await conversationLog.getConverstion({ limit: 10})
-    //  await conversationLog.addEntry({ entry: prompt, speaker: "user"})
-
-    //  const pineconeIndex = client!.Index(process.env.PINECONE_INDEX!)
-     
-     channel.publish({
-        data: {
-            event: "status",
-            message: "Finding matches..."
-        }
-     })
-
-     const model = new ChatOpenAI({ 
-        maxTokens: 256,
-        topP: 1,
-        frequencyPenalty: 0,
-        presencePenalty: 0,
-        temperature: 1,
-        streaming,
-        modelName: 'gpt-4', //change this to gpt-4 if you have access
-        callbacks: [{
-            async handleLLMNewToken(token) {
-                channel.publish({
-                    data: {
-                        event: "response",
-                        token,
-                        interactionId 
-                    }
-                })
-            },
-            async handleLLMEnd() {
-                channel.publish({
-                    data: {
-                        event: "responseEnd"
-                    }
-                })
-            }
-        }]         
-    });
-
-
-    
-    //
-    console.log("previous getting prompt")
-    let prompt = await getNewPrompt(numberOfUserMessages,status,history)
-    console.log("post getting prompt")
-
-    const chatPrompt = ChatPromptTemplate.fromPromptMessages([
-        SystemMessagePromptTemplate.fromTemplate(
-            prompt
-        ),
-        HumanMessagePromptTemplate.fromTemplate(`{question}`),
-    ]);
-
-    const chain = new LLMChain({
-        llm: model,
-        prompt: chatPrompt,
-    });
-
-    console.log("previous calling chain")
-    //  let chat_history =  conversationHistory.join("\n")
-    let chat_history = history;
-    const response = await chain.call({ question: prompt, chat_history })
-
-    console.log("post getting chain")
-     if(!streaming) {
-        channel.publish({
-            data: {
-                event: "response",
-                token: response.text,
-                interactionId 
-            }
-        })
-     }
-
-     if(source) {
-        const pageContents: string[] = []
-
-        let index = 1
-        response.sourceDocuments.forEach((source: PageSource) => {
-            const { pageContent, metadata: { url }} = source
-        
-            if(!pageContents.includes(pageContent)){
-                const token = `<br/><b>Source #${index}</b>
-                                    <br/>${pageContent}
-                                    <br/><a href="${url}" target="_blank">${url}</a>` 
-            
-                channel.publish({
-                    data: {
-                        event: "response",
-                        token: "<br/>" + token,
-                        interactionId 
-                    }
-                })
-            
-                pageContents.push(pageContent)
-                index++
-            }
-        });
-    }
-
-    //  await conversationLog.addEntry({ entry: response.text, speaker: "bot" })
-
-    } catch(error) { 
-       console.error(error)
-   }
-}
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const {  body: { numberOfUserMessages, status, history, prompt, userId, source, streaming } } = req
-    let newStatus = await handleRequest({ numberOfUserMessages, status, history, prompt, userId, source, streaming})
-    res.status(200).json({ "message": "started", status: newStatus })
-}
-
-
 let ROOT_CAUSE_IDENTIFICATION_PROMPT = `You are an expert therapist trained in Internal Family Systems therapy. Help me explore my internal world and use principles from internal family systems therapy. Help me understand the different parts of myself by asking thoughtful questions. Engage with me in a supportive and understanding manner, mirroring the tone and cadence of a compassionate listener. Dive deep into my feelings, ask clarifying questions, and provide insights that help me navigate my emotions. Analyze the conversation to uncover deep-seated motivations, emotional drivers, and underlying reasons. Go beyond immediate and observable causes to probe into potential psychological, societal, or personal pressures influencing my decisions.
 
 Your goal is to understand what my problem is and help me uncover the root cause of my problem. The root cause of a problem should not be a surface level realization, it should be the true deeper underlying cause of the problem, not the first cause that comes up. An example of a root cause would be, an underlying feeling such as "I'm not good enough" or "that's what my parents did to me". An example of something that is a symptom and not a root cause of a problem is, "I used to be healthy but I'm not anymore". If you sense that I’m giving you a symptom response, ask more probing questions. If you sense that you’ve identified the root cause of the problem, reply with a supportive and compassionate response and give me a summary of the situation and make me feel better.
@@ -334,3 +118,243 @@ Provide gentle guidance without overwhelming me. Be supportive and non-judgmenta
 
 Chat History: 
 {chat_history}`
+
+const promptToStatusMapping = {
+    "rootCauseIdentification": ROOT_CAUSE_IDENTIFICATION_PROMPT,
+    "solutionTypeIdentification": SOLUTION_TYPE_IDENTIFICATION_PROMPT,
+    "shortTermSolution": SHORT_TERM_SOLUTION_PROMPT,
+};
+
+
+const callLLM = async (prompt: string,history: string) =>{
+
+    const model2 = new ChatOpenAI({ 
+        maxTokens: 256,
+        topP: 1,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+        temperature: 1,
+        streaming:false,
+        modelName: 'gpt-4', //change this to gpt-4 if you have access
+    });
+
+
+    const chatPrompt = ChatPromptTemplate.fromPromptMessages([
+        SystemMessagePromptTemplate.fromTemplate(
+            prompt
+        ),
+    ]);
+
+    const chain = new LLMChain({
+        llm: model2,
+        prompt: chatPrompt,
+    });
+    const response = await chain.call({ chat_history:history })
+
+    return response.text
+
+}
+
+ 
+
+
+const getNewPrompt = async (numberOfUserMessages:number,status: string,history: string) => {
+    console.log(status, "status");
+    if(!history){
+        console.log(history, "no history");
+        return ROOT_CAUSE_IDENTIFICATION_PROMPT 
+    }
+    if(status === "rootCauseIdentification") {
+        let problems = await callLLM(ROOT_CAUSE_IDENTIFICATION_CHECK,history)
+        console.log(problems, "problems");
+        if(problems.includes("True")){
+            console.log("root cause identified");
+            return ROOT_CAUSE_IDENTIFICATION_PROMPT
+        }else{
+            // if its been 3 messages in history do is stuck check
+            let been3Messages = numberOfUserMessages>3;
+            if(been3Messages){
+                let isStuck = await callLLM(IS_STUCK_CHECK,history)
+                console.log(isStuck, "isStuck");
+                if(isStuck.includes("True")){
+                    return SOLUTION_TYPE_IDENTIFICATION_PROMPT
+                }else{
+                    console.log(isStuck, "!isStuck");
+                    return ROOT_CAUSE_IDENTIFICATION_PROMPT
+                }
+            }else{
+                console.log("not been more than 3 messages");
+                return ROOT_CAUSE_IDENTIFICATION_PROMPT
+            }
+        }
+    }
+
+    if(status === "solutionTypeIdentification") {
+        let solutionType = await callLLM(SOLUTION_TYPE_IDENTIFICATION_CHECK,history)
+        console.log(solutionType, "solutionType");
+        if(solutionType.includes("short-term")){
+            return SHORT_TERM_SOLUTION_PROMPT
+        }else if(solutionType.includes("root-cause")){ 
+            return ROOT_CAUSE_IDENTIFICATION_PROMPT
+        }else{
+            return SOLUTION_TYPE_IDENTIFICATION_PROMPT
+        }
+    }
+
+    if(status === "shortTermSolution") {
+        // sendShortTermSolutionPrompt
+        return SHORT_TERM_SOLUTION_PROMPT
+    }
+
+
+    return ROOT_CAUSE_IDENTIFICATION_PROMPT
+}
+
+function getStatusFromPrompt(prompt: string): string {
+    // Use Object.keys to get the keys of the mapping
+    const status = Object.keys(promptToStatusMapping).find(
+        (key) => promptToStatusMapping[key as keyof typeof promptToStatusMapping] === prompt
+    ) as keyof typeof promptToStatusMapping;
+    
+    // Log the resulting status
+    console.log("New Status:", status);
+
+    return status;
+}
+
+
+
+const handleRequest = async ({
+    numberOfUserMessages,
+    initialStatus, // Changed the parameter name to avoid conflicts
+    history,
+    prompt,
+    userId,
+    source,
+    streaming,
+  }: {
+    numberOfUserMessages: number;
+    initialStatus: string; // Changed the parameter name to avoid conflicts
+    history: string;
+    prompt: string;
+    userId: string;
+    source: boolean;
+    streaming: boolean;
+  }) => {
+    try {
+      console.log("------------******************start of handle request******************----------------")
+      console.log("Initial Status:", initialStatus);
+      const channel = ably.channels.get(userId);
+      const interactionId = uuid();
+  
+      channel.publish({
+        data: {
+          event: "status",
+          message: "Finding matches...",
+        },
+      });
+  
+      const model = new ChatOpenAI({
+        maxTokens: 256,
+        topP: 1,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+        temperature: 1,
+        streaming,
+        modelName: "gpt-4", //change this to gpt-4 if you have access
+        callbacks: [
+          {
+            async handleLLMNewToken(token) {
+              channel.publish({
+                data: {
+                  event: "response",
+                  token,
+                  interactionId,
+                },
+              });
+            },
+            async handleLLMEnd() {
+              channel.publish({
+                data: {
+                  event: "responseEnd",
+                },
+              });
+            },
+          },
+        ],
+      });
+  
+    //   console.log("previous getting prompt");
+      let newPrompt = await getNewPrompt(
+        numberOfUserMessages,
+        initialStatus, // Use the initialStatus parameter here
+        history
+      );
+    //   console.log("post getting prompt");
+  
+      const chatPrompt = ChatPromptTemplate.fromPromptMessages([
+        SystemMessagePromptTemplate.fromTemplate(newPrompt), // Use the newPrompt here
+        HumanMessagePromptTemplate.fromTemplate(`{question}`),
+      ]);
+  
+      const chain = new LLMChain({
+        llm: model,
+        prompt: chatPrompt,
+      });
+  
+    //   console.log("previous calling chain");
+      let chat_history = history;
+      const response = await chain.call({ question: prompt, chat_history });
+  
+    //   console.log("post getting chain");
+      if (!streaming) {
+        channel.publish({
+          data: {
+            event: "response",
+            token: response.text,
+            interactionId,
+          },
+        });
+      }
+  
+      if (source) {
+        const pageContents: string[] = [];
+  
+        let index = 1;
+        response.sourceDocuments.forEach((source: PageSource) => {
+          const { pageContent, metadata: { url } } = source;
+  
+          if (!pageContents.includes(pageContent)) {
+            const token = `<br/><b>Source #${index}</b>
+                                      <br/>${pageContent}
+                                      <br/><a href="${url}" target="_blank">${url}</a>`;
+  
+            channel.publish({
+              data: {
+                event: "response",
+                token: "<br/>" + token,
+                interactionId,
+              },
+            });
+  
+            pageContents.push(pageContent);
+            index++;
+          }
+        });
+      }
+      // Call getStatusFromPrompt
+      const status = getStatusFromPrompt(newPrompt);
+      console.log("------------******************start of handle request******************----------------")
+      return status;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+    const {  body: { numberOfUserMessages, initialStatus, history, prompt, userId, source, streaming } } = req
+    let newStatus = await handleRequest({ numberOfUserMessages, initialStatus, history, prompt, userId, source, streaming})
+    res.status(200).json({ "message": "started", status: newStatus })
+}
+
