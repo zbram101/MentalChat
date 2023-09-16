@@ -292,7 +292,7 @@ Example of response: Problem 1 - [Short description of problem] - True Problem 2
 Chat History: 
 {chat_history}`
 
-let IS_STUCK_CHECK = `Below is a conversation between a therapist and a patient. Analyze the conversation below and If during the course of the therapist trying to identify the root cause of the problem, the therapist has ask 3 questions in a row that were unsuccessful in identifying the root cause of the problem or making meaningful progress to identifying the root cause of the problem, reply with "False". If the root cause has been identified or if the therapist has asked less than 3 questions in a row with no meaningful progressing being made towards identifying the root cause of the problem, reply with "True". Reply with "True" or "False" and give no additional words or characters.
+let IS_STUCK_CHECK = `Below is a conversation between a therapist and a patient. Analyze the conversation below and If during the course of the therapist trying to identify the root cause of the problem, the therapist has ask 3 questions in a row that were unsuccessful in identifying the root cause of the problem or making meaningful progress to identifying the root cause of the problem, reply with "True". If the root cause has been identified or if the therapist has asked less than 3 questions in a row with no meaningful progressing being made towards identifying the root cause of the problem, reply with "False". If less than 3 questions in a row, which were unsuccessful Reply with "True" or "False" and give no additional words or characters.
 
 Chat History: 
 {chat_history}`
