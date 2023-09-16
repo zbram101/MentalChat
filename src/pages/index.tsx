@@ -250,6 +250,25 @@ export default function Home() {
                     }
                   </MessageList>
                   <MessageInput
+                    ref={inputRef}
+                    placeholder='Type message here'
+                    onSend={submit}
+                    onChange={(e, text) => {
+                      setText(text);
+                    }}
+                    sendButton={true}
+                    disabled={botIsTyping}
+                    style={{
+                      backgroundColor:
+                        conversationStatus === "rootCauseIdentification"
+                          ? "#ffcccc" // Set the background color for rootCauseIdentification
+                          : conversationStatus === "solutionTypeIdentification"
+                          ? "#ccffcc" // Set the background color for solutionTypeIdentification
+                          : "#ffffff", // Default background color
+                    }}
+                  />
+
+                  {/* <MessageInput
                       ref={inputRef}
                       placeholder='Type message here'
                       onSend={submit}
@@ -258,7 +277,7 @@ export default function Home() {
                       }}
                       sendButton={true}
                       disabled={botIsTyping}
-                  />
+                  /> */}
               </ChatContainer>
             </MainContainer>
         ) : (
