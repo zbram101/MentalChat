@@ -98,7 +98,7 @@ Ask me if I'd like to keep trying to identify the deeper underlying cause of the
 Chat History: 
 {chat_history}`
 
-let SOLUTION_TYPE_IDENTIFICATION_CHECK = `Below is a conversation between a therapist and a patient. Analyze the conversation to see if the root cause of the patient's (user) problem has been identified. The root cause of a problem should not be a surface level realization, it should be the true deeper underlying cause of the problem, not the first cause that comes up. An example of a surface level root cause would be a symptom, such as “I no longer take care of myself”. The true root cause would be the reason that they are no longer taking care of themselves. It could also be something from earlier in their life (such as a pattern from childhood). Also analyze the conversation to identify any key insights. These insights could include information about the client, past experiences discusses or discovered, emotions shared and what caused the emotions, relevant and significant life events, coping mechanisms, or any other information that might be relevant for a future therapy session, including if the client was "stuck" at any point while identifying the root cause of the problem.
+let SOLUTION_TYPE_IDENTIFICATION_CHECK = `Below is a conversation between a therapist and a patient. The patient (user) is stuck while trying to identify the root cause of their problem. At this point in the conversation the therapist is trying to find out if they should push the client to identify the root cause fo the issue, or workshop a short-term solution for the patient. Analyze the conversation to see if the patient (User) wants to keep working to identify the root cause of the problem or find a short-term solution to their problem. If the patient wants a short-term solution reply with "True". If they want to keep exploring to identify the root cause of their issue, reply with "False". If you're not sure, reply with "Unknown". 
 
 Chat History: 
 {chat_history}`
@@ -192,9 +192,9 @@ const getNewPrompt = async (numberOfUserMessages:number,status: string,history: 
     if(status === "solutionTypeIdentification") {
         let solutionType = await callLLM(SOLUTION_TYPE_IDENTIFICATION_CHECK,history)
         console.log(solutionType, "solutionType");
-        if(solutionType.includes("short-term")){
+        if(solutionType.includes("True")){
             return SHORT_TERM_SOLUTION_PROMPT
-        }else if(solutionType.includes("root-cause")){ 
+        }else if(solutionType.includes("False")){ 
             return ROOT_CAUSE_IDENTIFICATION_PROMPT
         }else{
             return SOLUTION_TYPE_IDENTIFICATION_PROMPT
@@ -228,7 +228,7 @@ const handleRequest = async ({
     numberOfUserMessages,
     initialStatus, // Changed the parameter name to avoid conflicts
     history,
-    prompt,
+    query,
     userId,
     source,
     streaming,
@@ -236,7 +236,7 @@ const handleRequest = async ({
     numberOfUserMessages: number;
     initialStatus: string; // Changed the parameter name to avoid conflicts
     history: string;
-    prompt: string;
+    query: string;
     userId: string;
     source: boolean;
     streaming: boolean;
@@ -304,7 +304,7 @@ const handleRequest = async ({
   
     //   console.log("previous calling chain");
       let chat_history = history;
-      const response = await chain.call({ question: prompt, chat_history });
+      const response = await chain.call({ question: query, chat_history });
   
     //   console.log("post getting chain");
       if (!streaming) {
@@ -353,8 +353,8 @@ const handleRequest = async ({
   
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const {  body: { numberOfUserMessages, initialStatus, history, prompt, userId, source, streaming } } = req
-    let newStatus = await handleRequest({ numberOfUserMessages, initialStatus, history, prompt, userId, source, streaming})
+    const {  body: { numberOfUserMessages, initialStatus, history, query, userId, source, streaming } } = req
+    let newStatus = await handleRequest({ numberOfUserMessages, initialStatus, history, query, userId, source, streaming})
     res.status(200).json({ "message": "started", status: newStatus })
 }
 

@@ -144,7 +144,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ numberOfUserMessages, initialStatus: conversationStatus, history, prompt: input, userId, source, streaming }), // Include the selected topic in the user input
+        body: JSON.stringify({ numberOfUserMessages, initialStatus: conversationStatus, history, query: input, userId, source, streaming }), // Include the selected topic in the user input
       });
 
       const responseData = await response.json();
@@ -261,10 +261,10 @@ export default function Home() {
                     style={{
                       backgroundColor:
                         conversationStatus === "rootCauseIdentification"
-                          ? "#ffcccc" // Set the background color for rootCauseIdentification
+                          ? "#ccffcc" // Set the background color for rootCauseIdentification
                           : conversationStatus === "solutionTypeIdentification"
-                          ? "#ccffcc" // Set the background color for solutionTypeIdentification
-                          : "#ffffff", // Default background color
+                          ? "#ffcccc" // Set the background color for solutionTypeIdentification
+                          : "#cccccc", // Default background color
                     }}
                   />
 
